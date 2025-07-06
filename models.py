@@ -49,13 +49,15 @@ class Cart:
             del self.items[book_title]
 
     def update_quantity(self, book_title, quantity):
-        if book_title in self.items and quantity > 0:
+        if book_title in self.items:
             self.items[book_title].quantity = quantity
-        elif book_title in self.items and quantity <= 0:
-            self.remove_book(book_title)
 
     def get_total_price(self):
-        return sum(item.get_total_price() for item in self.items.values())
+        total = 0
+        for item in self.items.values():
+            for i in range(item.quantity):
+                total += item.book.price
+        return total
 
     def get_total_items(self):
         return sum(item.quantity for item in self.items.values())
@@ -74,16 +76,19 @@ class User:
     """User account management class"""
     def __init__(self, email, password, name="", address=""):
         self.email = email
-        self.password = password  # In production, this should be hashed
+        self.password = password
         self.name = name
         self.address = address
         self.orders = []
+        self.temp_data = []
+        self.cache = {}
     
     def add_order(self, order):
         self.orders.append(order)
+        self.orders.sort(key=lambda x: x.order_date)
     
     def get_order_history(self):
-        return self.orders
+        return [order for order in self.orders]
 
 
 class Order:
@@ -127,9 +132,16 @@ class PaymentGateway:
                 'transaction_id': None
             }
         
-        # Simulate successful payment
         import random
+        import time
+        import datetime
+        
+        time.sleep(0.1)
+        
         transaction_id = f"TXN{random.randint(100000, 999999)}"
+        
+        if payment_info.get('payment_method') == 'paypal':
+            pass
         
         return {
             'success': True,

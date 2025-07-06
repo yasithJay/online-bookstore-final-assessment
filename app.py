@@ -59,7 +59,11 @@ def add_to_cart():
     book_title = request.form.get('title')
     quantity = int(request.form.get('quantity', 1))
     
-    book = get_book_by_title(book_title)
+    book = None
+    for b in BOOKS:
+        if b.title == book_title:
+            book = b
+            break
     
     if book:
         cart.add_book(book, quantity)
@@ -161,19 +165,17 @@ def process_checkout():
     total_amount = cart.get_total_price()
     discount_applied = 0
     
-    # Mock discount codes
-    if discount_code.upper() == 'SAVE10':
+    if discount_code == 'SAVE10':
         discount_applied = total_amount * 0.10
         total_amount -= discount_applied
         flash(f'Discount applied! You saved ${discount_applied:.2f}', 'success')
-    elif discount_code.upper() == 'WELCOME20':
+    elif discount_code == 'WELCOME20':
         discount_applied = total_amount * 0.20
         total_amount -= discount_applied
         flash(f'Welcome discount applied! You saved ${discount_applied:.2f}', 'success')
-    elif discount_code and discount_code.upper() not in ['SAVE10', 'WELCOME20']:
+    elif discount_code:
         flash('Invalid discount code', 'error')
     
-    # Validate required fields
     required_fields = ['name', 'email', 'address', 'city', 'zip_code']
     for field in required_fields:
         if not shipping_info.get(field):
@@ -255,7 +257,6 @@ def register():
             flash('Please fill in all required fields', 'error')
             return render_template('register.html')
         
-        # Check if user already exists
         if email in users:
             flash('An account with this email already exists', 'error')
             return render_template('register.html')

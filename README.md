@@ -8,6 +8,23 @@
 
 The Online Bookstore is a comprehensive e-commerce web application built with Flask that demonstrates modern software patterns, user authentication, payment processing, and order management scenarios ideal for software testing education.
 
+## ⚠️ IMPORTANT NOTE FOR TESTING
+
+**This application intentionally contains bugs, inefficiencies, and edge cases** to provide realistic testing scenarios for educational purposes. Students are expected to:
+
+- **Discover Issues**: Find bugs through systematic testing
+- **Document Problems**: Create detailed bug reports
+- **Propose Solutions**: Suggest fixes for identified issues
+- **Improve Performance**: Identify and optimize inefficient code
+- **Enhance Security**: Find and address security vulnerabilities
+
+The goal is to learn through discovery and problem-solving. Use various testing techniques including:
+- Functional testing
+- Performance testing  
+- Security testing
+- Usability testing
+- Edge case testing
+
 ### 🚀 Features Implemented
 
 #### 📖 Book Catalog (FR-001)
