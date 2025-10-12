@@ -1,0 +1,54 @@
+name: CI Pipeline for Online bookstore
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out repository code  
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Run all tests with coverage report
+      - name: Run pytest with coverage
+        run: |
+          pytest -v --cov=./ --cov-report=term-missing tests/
+
+      # Upload coverage report artifact (optional)
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./.coverage
+
+deploy:
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Simulate Deploy to Test Environment
+        run: |
+          echo "✅ All tests passed. Deploying to test environment..."
+          # Simulated deployment command          
