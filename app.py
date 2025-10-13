@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from models import Book, Cart, User, Order, PaymentGateway, EmailService
 import uuid
+import re
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Required for session management
@@ -57,7 +58,12 @@ def index():
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
     book_title = request.form.get('title')
-    quantity = int(request.form.get('quantity', 1))
+    quantity_string = request.form.get('quantity', 1)
+    
+    # validate the quantity is a number
+    if not quantity_string.isdigit():
+        flash('Invalid quantity. Please enter a number.')
+        return redirect(url_for('index'))
     
     book = None
     for b in BOOKS:
@@ -65,6 +71,8 @@ def add_to_cart():
             book = b
             break
     
+    quantity = int(quantity_string)
+
     if book:
         cart.add_book(book, quantity)
         flash(f'Added {quantity} "{book.title}" to cart!', 'success')
@@ -159,7 +167,8 @@ def process_checkout():
         'cvv': request.form.get('cvv')
     }
     
-    discount_code = request.form.get('discount_code', '')
+    # discount_code = request.form.get('discount_code', '')
+    discount_code = request.form.get('discount_code', '').strip().upper() # discount code case sensitive issue fix
     
     # Calculate total with discount
     total_amount = cart.get_total_price()
@@ -247,10 +256,16 @@ def order_confirmation(order_id):
 def register():
     """User registration"""
     if request.method == 'POST':
-        email = request.form.get('email')
+        # email = request.form.get('email')
+        email = request.form.get('email').strip().lower() # Fix: email case sensitivity issue
         password = request.form.get('password')
         name = request.form.get('name')
         address = request.form.get('address', '')
+
+        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        if not re.match(pattern, email):
+            flash('Invalid email address format', 'error')
+            return redirect(url_for('register'))
         
         # Validate required fields
         if not email or not password or not name:

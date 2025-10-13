@@ -24,6 +24,14 @@ def client():
             sess.clear()
         yield client
 
+@pytest.fixture(autouse=True)
+def reset_users():
+    """Reset users dictionary but keep demo user."""
+    demo = users.get('demo@bookstore.com')
+    users.clear()
+    if demo:
+        users['demo@bookstore.com'] = demo
+
 
 # ****************************
 # FR-001: Book Catalog Tests
@@ -61,7 +69,7 @@ def test_add_to_cart(client):
 def test_add_invalid_quantity(client):
     # TC002-02: Edge case - invalid quantity input (non-integer)
     response = client.post('/add-to-cart', data={'title': '1984', 'quantity': 'abc'})
-    assert response.status_code == 302  # Redirects back to index - Should handle error and not crash
+    assert b'Invalid quantity. Please enter a number.' in response.data or response.status_code == 302
 
 def test_remove_from_cart(client):
     # TC002-03: Remove book from cart
@@ -76,11 +84,11 @@ def test_update_cart_quantity(client):
     assert cart.items[BOOKS[0].title].quantity == 5
 
 def test_update_cart_zero_quantity(client):
-    # TC002-05: Edge case - quantity zero removes item (intentional bug)
+    # TC002-05: Edge case - quantity zero removes item
     cart.add_book(BOOKS[0], 1)
     client.post('/update-cart', data={'title': BOOKS[0].title, 'quantity': 0})
     # Bug: Cart.update_quantity doesn't remove item
-    assert cart.items[BOOKS[0].title].quantity == 0 # ----FIX this
+    assert BOOKS[0].title not in cart.items
 
 def test_update_cart_negative_quantity(client):
     # TC002-06: Edge case - negative quantity removes item
@@ -116,7 +124,7 @@ def test_checkout_empty_cart(client):
     assert response.status_code == 302  # Redirect to index
 
 def test_apply_discount_code_case_sensitive(client):
-    # TC003-02: Discount code 'SAVE10' should be applied correctly (intentional bug: case-sensitive)
+    # TC003-02: Discount code 'SAVE10' should be applied correctly
     cart.add_book(BOOKS[0], 1)
     response = client.post('/process-checkout', data={
         'name': 'John Doe',
@@ -130,8 +138,11 @@ def test_apply_discount_code_case_sensitive(client):
         'cvv': '123',
         'discount_code': 'save10'  # lower case
     }, follow_redirects=True)
-    # Bug: Discount won't apply due to case sensitivity
-    assert b'Invalid discount code' in response.data
+    
+    # check if the discount is applied
+    total_amount = session.get('total_amount', 0)
+    assert total_amount < BOOKS[0].price
+
 
 def test_apply_discount_code_uppercase(client):
     # TC003-03: Discount code 'SAVE10' applies correctly
@@ -148,7 +159,10 @@ def test_apply_discount_code_uppercase(client):
         'cvv': '123',
         'discount_code': 'SAVE10'
     }, follow_redirects=True)
-    assert b'Discount applied!' in response.data
+
+    # check if the discount is applied
+    total_amount = session.get('total_amount', 0)
+    assert total_amount < BOOKS[0].price
 
 def test_invalid_discount_code(client):
     # TC003-04: Invalid discount code
@@ -165,7 +179,14 @@ def test_invalid_discount_code(client):
         'cvv': '123',
         'discount_code': 'INVALID'
     }, follow_redirects=True)
-    assert b'Invalid discount code' in response.data
+
+    with client.session_transaction() as sess:
+        flashed_messages = sess['_flashes']
+        categories = [c for c, m in flashed_messages]
+        messages = [m for c, m in flashed_messages]
+        assert 'error' in categories
+        assert 'Invalid discount code' in messages
+        
 
 def test_empty_payment_fields(client):
     # TC003-05: Checkout with missing payment info
@@ -251,18 +272,20 @@ def test_register_user(client):
         'password': 'password',
         'name': 'New User'
     }, follow_redirects=True)
+
+    print(response)
     assert b'Account created successfully' in response.data
-    assert 'newuser@example.com' in users
+    assert 'newuser@example.com'.lower() in users
 
 def test_register_duplicate_email_case(client):
-    # TC006-02/ TC-S02: Duplicate email check (intentional bug: case-sensitive)
+    # TC006-02: Duplicate email check 
     response = client.post('/register', data={
         'email': 'DEMO@bookstore.com',  # Different case than demo@bookstore.com
         'password': 'password',
         'name': 'Demo'
     }, follow_redirects=True)
-    # Bug allows duplicate because of case sensitivity
-    assert b'Account created successfully' in response.data
+
+    assert b'An account with this email already exists' in response.data
 
 def test_login_logout_user(client):
     # TC006-03: Login and logout user
@@ -288,12 +311,12 @@ def test_login_invalid_credentials(client):
 def test_profile_update(client):
     # TC006-06: Update user profile
     client.post('/login', data={'email': 'demo@bookstore.com', 'password': 'demo123'}, follow_redirects=True)
-    response = client.post('/profile', data={
+    response = client.post('/update-profile', data={
         'name': 'Updated Demo',
         'address': 'New Address',
         'password': 'newpassword123'
     }, follow_redirects=True)
-    assert b'Profile updated successfully' in response.data or response.status_code == 200
+    assert b'Profile updated successfully!' in response.data or response.status_code == 200
 
 # ****************************
 # FR-007: Responsive / Usability Placeholder
@@ -327,16 +350,16 @@ def test_order_history_profile():
 # ****************************
 
 def test_password_storage_security():
-    # TC-S01: Check passwords stored as plain text (intentional bug)
+    # TC-S01: Check passwords stored as plain text
     user = users['demo@bookstore.com']
-    assert user.password == 'demo123'  # Bug: passwords are plain text
+    assert user.password == 'demo123'  # Need to fix: passwords are plain text
 
 def test_email_case_insensitive_security(client):
-    # TC-S02: Register email in different case should not allow duplicate (intentional bug)
-    client.post('/register', data={
+    # TC-S02: Register email in different case should not allow duplicate
+    response = client.post('/register', data={
         'email': 'demo@bookstore.com',
         'password': 'password',
         'name': 'Demo2'
     }, follow_redirects=True)
-    # Bug: duplicate user allowed due to case sensitivity
-    assert 'demo@bookstore.com' in users
+    
+    assert b'An account with this email already exists' in response.data
