@@ -57,11 +57,18 @@ class Cart:
                 self.items[book_title].quantity = quantity
 
     def get_total_price(self):
+        # total = 0
+        # for item in self.items.values():
+        #     for i in range(item.quantity):
+        #         total += item.book.price
+        # return total
+
+        # removed nested loop
         total = 0
         for item in self.items.values():
-            for i in range(item.quantity):
-                total += item.book.price
+                total += item.book.price * item.quantity
         return total
+
 
     def get_total_items(self):
         return sum(item.quantity for item in self.items.values())
@@ -84,15 +91,16 @@ class User:
         self.name = name
         self.address = address
         self.orders = []
-        self.temp_data = []
-        self.cache = {}
+        # self.temp_data = [] -- never used variable
+        # self.cache = {} -- never used variable
     
     def add_order(self, order):
         self.orders.append(order)
-        self.orders.sort(key=lambda x: x.order_date)
+        # self.orders.sort(key=lambda x: x.order_date) ---- always sorting orders without a reason
     
-    def get_order_history(self):
-        return [order for order in self.orders]
+    def get_order_history(self, sorted_by_date = False):
+        # return [order for order in self.orders]
+        return sorted(self.orders, key=lambda x: x.order_date) if sorted_by_date else self.orders
 
 
 class Order:

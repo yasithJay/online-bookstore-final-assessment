@@ -65,11 +65,14 @@ def add_to_cart():
         flash('Invalid quantity. Please enter a number.')
         return redirect(url_for('index'))
     
-    book = None
-    for b in BOOKS:
-        if b.title == book_title:
-            book = b
-            break
+    # book = None
+    # for b in BOOKS:
+    #     if b.title == book_title:
+    #         book = b
+    #         break
+
+    # Improvement: use pre-existing get_book_by_title method instead looping through all books
+    book = get_book_by_title(book_title)
     
     quantity = int(quantity_string)
 

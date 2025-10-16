@@ -26,7 +26,7 @@ def client():
 
 @pytest.fixture(autouse=True)
 def reset_users():
-    """Reset users dictionary but keep demo user."""
+    # Reset users dictionary but keep demo user.
     demo = users.get('demo@bookstore.com')
     users.clear()
     if demo:
@@ -343,7 +343,7 @@ def test_order_history_profile():
     profiler.enable()
     _ = user.get_order_history()
     profiler.disable()
-    profiler.print_stats(0)
+    profiler.print_stats(sort='tottime')
 
 # ****************************
 # Security Tests

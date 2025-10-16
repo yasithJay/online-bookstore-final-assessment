@@ -4,3 +4,4 @@ flask-WTF==1.0.1
 pytest==7.0.1
 pytest-cov==4.1.0
 pytest-mock==3.12.0
+coverage==7.10.7

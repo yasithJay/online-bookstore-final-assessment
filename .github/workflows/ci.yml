@@ -30,7 +30,7 @@ jobs:
       # Run all tests with coverage report
       - name: Run pytest with coverage
         run: |
-          pytest -v --cov=./ --cov-report=term-missing tests/
+          pytest -v -s --cov=./ --cov-report=term-missing tests/
 
       # Upload coverage report artifact (optional)
       - name: Upload coverage report
